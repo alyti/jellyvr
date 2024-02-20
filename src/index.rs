@@ -316,7 +316,7 @@ pub(crate) fn baseitems_to_scan(
                 rating: item.community_rating.unwrap_or_default() as f64 / 2.0, // 0-10 to 0-5
                 favorites: 0,
                 comments: 0,
-                is_favorite: false,
+                is_favorite: baseitem_to_favorite(item),
                 tags: baseitem_to_tags(item),
 
                 thumbnail_image: thumb,
@@ -418,6 +418,13 @@ fn baseitem_to_subtitles(item: &jellyfin::types::BaseItemDto, jf_host: &str, jf_
     subtitles
 }
 
+fn baseitem_to_favorite(item: &jellyfin::types::BaseItemDto) -> bool {
+    item.user_data
+        .as_ref()
+        .and_then(|user_data| Some(!user_data.played.unwrap_or_default()))
+        .unwrap_or_default()
+}
+
 fn baseitems_to_video_cache(
     user_id: &str,
     jf_host: &str,
@@ -452,7 +459,7 @@ fn baseitems_to_video_cache(
                 date_added: baseitem_date_to_string(item.date_created),
                 duration: (item.run_time_ticks.unwrap_or_default() as f64 / 10000.0),
                 rating: item.community_rating.unwrap_or_default() as f64 / 2.0, // 0-10 to 0-5
-                is_favorite: false,
+                is_favorite: baseitem_to_favorite(item),
                 projection: "perspective".to_string(),
                 stereo: "mono".to_string(),
                 tags: baseitem_to_tags(item),
