@@ -1,0 +1,34 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 210" width="250" height="250">
+	<title>heresphere_branding_logo-svg</title>
+	<defs>
+		<radialGradient id="g1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(188.91,-2.09,2.09,188.91,105,105)">
+			<stop offset="0" stop-color="#1f3879"/>
+			<stop offset="1" stop-color="#0e111b"/>
+		</radialGradient>
+		<linearGradient id="g2" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(48.1,27.77,-30.357,52.581,146.834,159.684)">
+			<stop offset="0" stop-color="#aa5cc3"/>
+			<stop offset="1" stop-color="#00a4dc"/>
+		</linearGradient>
+		<linearGradient id="g3" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(48.1,27.77,-30.354,52.575,146.834,159.684)">
+			<stop offset="0" stop-color="#aa5cc3"/>
+			<stop offset="1" stop-color="#00a4dc"/>
+		</linearGradient>
+	</defs>
+	<style>
+		.s0 { fill: url(#g1) } 
+		.s1 { opacity: .5;fill: none;stroke: #050505;stroke-linejoin: round;stroke-width: 3.3 } 
+		.s2 { fill: url(#g2) } 
+		.s3 { fill: url(#g3) } 
+		.s4 { fill: none;stroke: #97ecff;stroke-linejoin: round;stroke-width: 3.9 } 
+		.s5 { fill: none;stroke: #bdff65;stroke-linejoin: round;stroke-width: 3.9 } 
+	</style>
+	<g id="layer1">
+		<path id="rect832-8-1-7" class="s0" d="m0 0h210v210h-210z"/>
+		<path id="path850-2-3-2-7" fill-rule="evenodd" class="s1" d="m105.2 41.6c-29.2 0-52.2 25-52.2 52 0 29.5 20.9 48.2 46 52.4v23.2l-41.8-0.2v-20.9"/>
+		<path id="path850-4-1-0-8-1" fill-rule="evenodd" class="s1" d="m134.4 169h-20.8v-127.4c29.2 4.2 50.1 25.1 50.1 52.2 0 29.3-20.9 48-50.1 52.2"/>
+		<path id="inner-shape" class="s2" d="m165 158.2c-2.5 0-10.7 14.9-9.5 17.4 1.2 2.5 17.8 2.5 19 0 1.2-2.5-6.9-17.4-9.5-17.4z"/>
+		<path id="outer-shape" fill-rule="evenodd" class="s3" d="m193.6 188.4c-3.7 7.4-53.5 7.5-57.2 0-3.8-7.6 20.9-52.4 28.6-52.4 7.7 0 32.3 44.9 28.6 52.4zm-28.6-40.9c-5 0-21.2 29.3-18.7 34.3 2.4 5 35 4.9 37.5 0 2.4-4.9-13.8-34.3-18.8-34.3z"/>
+		<path id="path850-5-1-8" fill-rule="evenodd" class="s4" d="m102 39.4c-29.3 0-52.2 25-52.2 52 0 29.4 20.8 48.2 45.9 52.4v23.2l-41.8-0.2v-20.9"/>
+		<path id="path850-4-7-8-9" fill-rule="evenodd" class="s5" d="m131.2 166.8h-20.9v-127.4c29.2 4.2 50.1 25.1 50.1 52.2 0 29.2-20.9 48-50.1 52.2"/>
+	</g>
+</svg>
