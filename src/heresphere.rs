@@ -45,6 +45,7 @@ pub struct ScanData {
     pub media: Vec<Media>,
     pub projection: String,
     pub stereo: String,
+    pub subtitles: Option<Vec<Subtitle>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

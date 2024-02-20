@@ -43,7 +43,7 @@ impl HeresphereIndex {
             .items
             .ok_or(AppError(eyre::eyre!("No items in BaseItemDtoQueryResult")))?;
         let library = baseitems_to_library("Library", &host, &items);
-        let scan = baseitems_to_scan(&app.config.jellyfin_base_url, &token, &host, &items);
+        let scan = baseitems_to_scan(&app.config.jellyfin_base_url, &token, &host, &app.config, &items);
         let videos = baseitems_to_video_cache(
             &user_id,
             &app.config.jellyfin_base_url,
@@ -285,6 +285,7 @@ pub(crate) fn baseitems_to_scan(
     jf_host: &str,
     jf_token: &str,
     host: &str,
+    config: &AppConfig,
     items: &[jellyfin::types::BaseItemDto],
 ) -> heresphere::Scan {
     let data = items
@@ -322,6 +323,7 @@ pub(crate) fn baseitems_to_scan(
                 projection: "perspective".to_string(),
                 stereo: "mono".to_string(),
                 media: baseitem_to_media(jf_host, jf_token, item),
+                subtitles: Some(baseitem_to_subtitles(item, jf_host, jf_token, None)),
             })
         })
         .collect();
@@ -393,11 +395,12 @@ fn baseitem_to_subtitles(item: &jellyfin::types::BaseItemDto, jf_host: &str, jf_
                             }
                             // {host}/Videos/{routeItemId}/{routeMediaSourceId}/Subtitles/{routeIndex}/Stream.{routeFormat}?api_key={routeApiKey}
                             let url = format!(
-                                "{}/Videos/{}/{}/Subtitles/{}/Stream.srt?api_key={}",
+                                "{}/Videos/{}/{}/Subtitles/{}/Stream.{}?api_key={}",
                                 jf_host,
                                 item.id.expect("No id in BaseItemDto").simple().to_string(),
                                 media_source.id.as_ref().expect("No id in MediaSourceInfo"),
                                 stream.index.unwrap_or_default(),
+                                stream.codec.clone().unwrap_or_default(),
                                 jf_token
                             );
                             subtitles.push(heresphere::Subtitle {
