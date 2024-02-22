@@ -7,7 +7,36 @@ Jellyfin proxy for VR Media Players
 
 </div>
 
+## Features
+- [x] HereSphere JSON API v1 support
+- [x] JellyFin QuickConnect as auth
+- [ ] JellyFin playback tracking
+- [ ] Configuration through
+  - [ ] Environment
+  - [ ] YAML
+  - [x] ~~Code~~ (Sorry)
+
 ## Usage
+
+### Login
+In HereSphere, navigate to root page (ex. `https://jellyvr.tld/`), you should see a code, on another device go to your jellyfin server and in QuickConnect page enter the code from jellyvr.
+After a few seconds jellyvr will reload itself and show a dashboard (TODO, it's just the credentials for now), in there you can find a username and password.
+The username is your jellyfin username.
+The password is a short random one, used for logging into HereSphere, try to remember it or write it down.
+Now you can either click the HereSphere link on the page or navigate to it manually by just appending `/heresphere` to the root page from earlier (ex. `https://jellyvr.tld/heresphere`)
+You will be prompted to login, enter your new credentials now.
+This session should persist for however long jellyfin decides to keep it, there's no built in expiration logic.
+
+### Browsing
+After login you should see your entire jellyfin library dumped in front of you.
+On the right side you can find tags, at the top right corner you will see a tag category selection box.
+For series one of the key tag categories is `Series` (and/or `Studio` which is just an alias which HereSphere has special treatment for)
+If you think there are tag categories missing feel free to open a PR or an Issue about it.
+
+## Limitations
+HereSphere has it's own codec limitations, notably it can't play Dolby audio, if you have media with ac3, eac3 or dts codecs you will have to either transcode them yourself or find alternatives.
+
+## Development
 This project uses Nix for development, [direnv](https://direnv.net/) support is included for convenience.
 
 - `nix develop`: opens up a `bash` shell with useful toolset
