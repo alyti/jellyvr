@@ -7,17 +7,20 @@
 use axum::{
     async_trait,
     body::{Body, Bytes},
-    extract::{FromRef, FromRequest, Host, MatchedPath, Path, Request as ExtractRequest, State},
-    http::{HeaderMap, Request, StatusCode},
+    extract::{
+        FromRef, FromRequest, FromRequestParts, Host, MatchedPath, Path, Request as ExtractRequest,
+        State,
+    },
+    http::{request::Parts, HeaderMap, Request, StatusCode},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
-use rust_embed::RustEmbed;
 use axum_embed::ServeEmbed;
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use http_body_util::BodyExt;
 use listenfd::ListenFd;
+use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use surrealdb::{
@@ -52,16 +55,18 @@ async fn main() -> eyre::Result<()> {
     db.use_ns("jellyvr").use_db("jellyvr").await?;
 
     // Sorry it's hardcoded for now
-    let config = AppConfig{
+    let config = AppConfig {
         jellyfin_base_url: "https://jellyfin.alyti.dev".to_string(),
         cache_lifetime: Duration::from_secs(60 * 2),
         prefered_subtitles_language: Some("eng".to_string()),
+        watchtime_tracking: false,
     };
 
     let heresphere_api = Router::new()
         .route("/", post(heresphere_libraries))
         .route("/scan", post(heresphere_scan))
-        .route("/:id", post(heresphere_video));
+        .route("/:id", post(heresphere_video))
+        .route("/events/:uid/:vid", post(heresphere_event));
 
     let app = Router::new()
         .route("/", get(root))
@@ -75,7 +80,7 @@ async fn main() -> eyre::Result<()> {
                 )),
             },
             db: db.clone(),
-            config
+            config,
         })
         .layer(
             TraceLayer::new_for_http()
@@ -97,17 +102,13 @@ async fn main() -> eyre::Result<()> {
                     // closures to attach a value to the initially empty field in the info_span
                     // created above.
                 })
-                .on_response(|_response: &Response, _latency: Duration, _span: &Span| {
-                })
-                .on_body_chunk(|_chunk: &Bytes, _latency: Duration, _span: &Span| {
-                })
+                .on_response(|_response: &Response, _latency: Duration, _span: &Span| {})
+                .on_body_chunk(|_chunk: &Bytes, _latency: Duration, _span: &Span| {})
                 .on_eos(
-                    |_trailers: Option<&HeaderMap>, _stream_duration: Duration, _span: &Span| {
-                    },
+                    |_trailers: Option<&HeaderMap>, _stream_duration: Duration, _span: &Span| {},
                 )
                 .on_failure(
-                    |_error: ServerErrorsFailureClass, _latency: Duration, _span: &Span| {
-                    },
+                    |_error: ServerErrorsFailureClass, _latency: Duration, _span: &Span| {},
                 ),
         )
         .fallback(handler_404);
@@ -129,7 +130,6 @@ async fn main() -> eyre::Result<()> {
     Ok(())
 }
 
-
 #[derive(RustEmbed, Clone)]
 #[folder = "assets/"]
 struct Assets;
@@ -139,6 +139,7 @@ struct AppConfig {
     jellyfin_base_url: String,
     cache_lifetime: Duration,
     prefered_subtitles_language: Option<String>,
+    watchtime_tracking: bool,
 }
 
 // the application state
@@ -291,6 +292,22 @@ impl AppState {
             None => Err(AppError(eyre::eyre!("No session found for request"))),
         }
     }
+
+    async fn get_session_from_heresphere_event(
+        &self,
+        userid: &str,
+    ) -> Result<SessionState, AppError> {
+        let session: Option<SessionState> = self
+            .db
+            .query("SELECT * FROM session WHERE session.User.user_id = $userid LIMIT 1")
+            .bind(userid)
+            .await?
+            .take(0)?;
+        match session {
+            Some(state) => Ok(state),
+            None => Err(AppError(eyre::eyre!("No session found for request"))),
+        }
+    }
 }
 
 fn gen_short_password(arg: i32) -> String {
@@ -352,12 +369,7 @@ impl FromRequest<AppState> for HeresphereSession {
         let user =
             match state.get_session_from_heresphere_request(&body).await {
                 Ok(SessionState {
-                    session:
-                        Session::User {
-                            user_id,
-                            token,
-                            ..
-                        },
+                    session: Session::User { user_id, token, .. },
                     ..
                 }) => HeresphereTranslatedUser { user_id, token },
                 Ok(_) => return Err((
@@ -394,9 +406,38 @@ impl FromRequest<AppState> for HeresphereSession {
     }
 }
 
+struct ProtoHost(String);
+
+#[async_trait]
+impl<S> FromRequestParts<S> for ProtoHost
+where
+    S: Send + Sync,
+{
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let host = Host::from_request_parts(parts, state)
+            .await
+            .map(|host| Self(host.0))
+            .map_err(IntoResponse::into_response);
+
+        // If the service is running behind a reverse proxy we need to
+        // use the `x-forwarded-proto` header to get the real proto of the request
+        // so our references to the service are correct for the client
+        let scheme = match parts.headers.get("x-forwarded-proto") {
+            Some(scheme) => scheme.to_str().map_err(|_| {
+                (StatusCode::BAD_REQUEST, "Invalid x-forwarded-proto header").into_response()
+            })?,
+            None => "http",
+        };
+
+        Ok(Self(format!("{}://{}", scheme, host?.0)))
+    }
+}
+
 async fn heresphere_libraries(
     State(app): State<AppState>,
-    Host(host): Host,
+    ProtoHost(host): ProtoHost,
     HeresphereSession { user, .. }: HeresphereSession,
 ) -> Result<impl IntoResponse, AppError> {
     let cache =
@@ -415,7 +456,7 @@ async fn heresphere_libraries(
 
 async fn heresphere_scan(
     State(app): State<AppState>,
-    Host(host): Host,
+    ProtoHost(host): ProtoHost,
     HeresphereSession { user, .. }: HeresphereSession,
 ) -> Result<impl IntoResponse, AppError> {
     let cache =
@@ -431,10 +472,30 @@ async fn heresphere_scan(
 
 async fn heresphere_video(
     State(app): State<AppState>,
+    ProtoHost(host): ProtoHost,
     Path(id): Path<String>,
-    HeresphereSession { user, .. }: HeresphereSession,
+    HeresphereSession { user, request }: HeresphereSession,
 ) -> Result<impl IntoResponse, AppError> {
-    let video = index::HeresphereIndex::get_video(&app.db, &user.user_id, &id).await?; //.ok_or(AppError(eyre::eyre!("No video found")))?;
+    let mut video = index::HeresphereIndex::get_video(&app.db, &user.user_id, &id).await?; //.ok_or(AppError(eyre::eyre!("No video found")))?;
+    if let Some(true) = request.needs_media_source {
+        let jellyfin_user = app.jellyfin.client.resume_user(&user.user_id, &user.token);
+        let playback_info = jellyfin_user
+            .playback_info(&id)
+            .await?;
+        let play_session = playback_info.play_session_id.ok_or(AppError(eyre::eyre!("Failed to get play session ID")))?;
+        let new_media_source = if let Some(transcoding_url) = playback_info.media_sources.first().and_then(|source| source.transcoding_url.as_ref()){
+            transcoding_url.clone()
+        } else {
+            format!("/Videos/{}/master.m3u8?playSessionId={}&api_key={}&mediaSourceId={}", id, play_session, user.token, match playback_info.media_sources.first() {
+                Some(source) => source.id.as_ref().unwrap_or(&id),
+                None => &id,
+            })
+        };
+        video.data.event_server = Some(format!("{}/heresphere/events/{}/{}", host, user.user_id, id));
+        video.data.media[0].sources[0].url = format!("{}{}", app.config.jellyfin_base_url, new_media_source);
+    }
+
+    tracing::debug!(video = ?video, "Found video");
     Ok((
         [
             (heresphere::MAGIC_HEADER, "1"),
@@ -442,4 +503,28 @@ async fn heresphere_video(
         ],
         serde_json::to_string_pretty(&video.data).map_err(|err| AppError(err.into()))?,
     ))
+}
+
+async fn heresphere_event(
+    State(app): State<AppState>,
+    ProtoHost(host): ProtoHost,
+    Path((uid, vid)): Path<(String, String)>,
+    Json(event): Json<heresphere::Event>,
+) -> Result<(), AppError> {
+    match app.get_session_from_heresphere_event(&uid).await {
+        Ok(SessionState {
+            session: Session::User { token, .. },
+            ..
+        }) => {
+            match event.event {
+                heresphere::EventType::Open => todo!(),
+                heresphere::EventType::Play => todo!(),
+                heresphere::EventType::Pause => todo!(),
+                heresphere::EventType::Close => todo!(),
+            };
+            Ok(())
+        },
+        Ok(_) => Ok(()),
+        Err(err) => Err(err),
+    }
 }

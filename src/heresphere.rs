@@ -28,67 +28,79 @@ pub struct Scan {
     pub scan_data: Vec<ScanData>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all(serialize = "camelCase", deserialize = "camelCase"))]
 pub struct ScanData {
     pub link: String,
-    pub title: String,
-    pub date_released: String,
-    pub date_added: String,
-    pub duration: f64,
-    pub rating: f64,
-    pub favorites: i32,
-    pub comments: i32,
-    pub is_favorite: bool,
-    pub tags: Vec<Tag>,
-    pub thumbnail_image: String,
-    pub media: Vec<Media>,
-    pub projection: String,
-    pub stereo: String,
-    pub subtitles: Option<Vec<Subtitle>>,
+    #[serde(flatten)]
+    pub video: VideoData
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all(serialize = "camelCase", deserialize = "camelCase"))]
 pub struct VideoData {
-    pub access: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub access: Option<i32>,
     pub title: String,
-    pub description: String,
-    pub thumbnail_image: String,
-    // pub thumbnail_video: Option<String>,
-    pub date_released: String,
-    pub date_added: String,
     pub duration: f64,
-    pub rating: f64,
-    // pub favorites: i32,
-    // pub comments: i32,
-    pub is_favorite: bool,
-    pub projection: String,
-    pub stereo: String,
-    // pub is_eye_swapped: bool,
-    // pub fov: f64,
-    // pub lens: String,
-    // pub camera_ipd: f64,
-    // pub hsp: Option<String>,
-    pub event_server: Option<String>,
-    // pub scripts: Vec<Script>,
-    pub subtitles: Vec<Subtitle>,
-    pub tags: Vec<Tag>,
     pub media: Vec<Media>,
-    // pub write_favorite: bool,
-    // pub write_rating: bool,
-    // pub write_tags: bool,
-    pub write_hsp: bool
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<Tag>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub date_released: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub date_added: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub projection: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub stereo: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_favorite: Option<bool>,
+    pub thumbnail_image: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rating: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail_video: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub favorites: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comments: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_eye_swapped: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fov: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lens: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub camera_ipd: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hsp: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_server: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scripts: Option<Vec<Script>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtitles: Option<Vec<Subtitle>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_favorite: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_rating: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_tags: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_hsp: Option<bool>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Script {
     pub name: String,
     pub url: String,
-    pub rating: f64
+    pub rating: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Subtitle {
     pub name: String,
     pub language: String,
@@ -108,7 +120,7 @@ pub struct Tag {
     pub rating: Option<f64>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Media {
     pub name: String,
     pub sources: Vec<MediaSource>
