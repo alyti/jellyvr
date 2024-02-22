@@ -93,7 +93,6 @@
             cargo-watch
             systemfd
             openssl # required by openssl-sys
-            surrealdb
             jq
           ];
           NIXPKGS_ALLOW_UNFREE=1;
