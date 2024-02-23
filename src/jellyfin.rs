@@ -1,5 +1,6 @@
 use std::vec;
 
+use chrono::Utc;
 use progenitor::generate_api;
 use uuid::Uuid;
 
@@ -342,5 +343,60 @@ impl JellyfinUser {
             .json()
             .await?;
         Ok(response)
+    }
+
+    pub async fn playback_start(&self, vid: &str, play_session_id: &str) -> Result<(), reqwest::Error> {
+        let url = format!("{}/Sessions/Playing", self.client.config.base_url);
+        self.client.client.post(&url).json(&types::PlaybackStartInfo{
+            aspect_ratio: None,
+            audio_stream_index: None,
+            brightness: None,
+            can_seek: Some(true),
+            is_muted: None,
+            is_paused: Some(false),
+            item: None,
+            item_id: Some(Uuid::parse_str(vid).expect("Invalid UUID")),
+            live_stream_id: None,
+            media_source_id: Some(vid.to_string()),
+            now_playing_queue: None,
+            play_method: None,
+            play_session_id: Some(play_session_id.to_string()),
+            playback_start_time_ticks: Some(Utc::now().timestamp_millis()),
+            playlist_item_id: None,
+            position_ticks: None,
+            repeat_mode: None,
+            session_id: None,
+            subtitle_stream_index: None,
+            volume_level: None,
+        }).header("X-Emby-Authorization", emby_authorization(Some(&self.token))).send().await?.error_for_status()?;
+        Ok(())
+    }
+
+    pub async fn playback_progress(&self, vid: &str, play_session_id: &str, position: i64, is_paused: bool, started_at: chrono::DateTime<Utc>) -> Result<(), reqwest::Error> {
+        let url = format!("{}/Sessions/Playing/Progress", self.client.config.base_url);
+        self.client.client.post(&url).json(&types::PlaybackProgressInfo{
+            item_id: Some(Uuid::parse_str(vid).expect("Invalid UUID")),
+            play_session_id: Some(play_session_id.to_string()),
+            position_ticks: Some(position),
+            is_paused: Some(is_paused),
+            media_source_id: Some(vid.to_string()),
+            playback_start_time_ticks: Some(started_at.timestamp_millis()),
+
+            aspect_ratio: None,
+            audio_stream_index: None,
+            brightness: None,
+            can_seek: Some(true),
+            is_muted: None,
+            item: None,
+            live_stream_id: None,
+            now_playing_queue: None,
+            play_method: None,
+            playlist_item_id: None,
+            repeat_mode: None,
+            session_id: None,
+            subtitle_stream_index: None,
+            volume_level: None,
+        }).header("X-Emby-Authorization", emby_authorization(Some(&self.token))).send().await?.error_for_status()?;
+        Ok(())
     }
 }

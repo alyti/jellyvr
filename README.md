@@ -10,7 +10,7 @@ Jellyfin proxy for VR Media Players
 ## Features
 - [x] HereSphere JSON API v1 support
 - [x] JellyFin QuickConnect as auth
-- [ ] JellyFin playback tracking
+- [x] JellyFin playback tracking
 - [ ] Configuration through
   - [ ] Environment
   - [ ] YAML
