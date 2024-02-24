@@ -27,10 +27,11 @@ use surrealdb::{
     engine::local::{Db, RocksDb},
     Surreal,
 };
-use tokio::net::TcpListener;
-use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
+use tokio::{net::TcpListener, signal};
+use tower_http::{trace::TraceLayer, timeout::TimeoutLayer};
 use tracing::{info_span, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use eyre::WrapErr;
 
 mod heresphere;
 mod index;
@@ -47,19 +48,19 @@ async fn main() -> eyre::Result<()> {
                 "jellyvr=debug,tower_http=debug,axum::rejection=trace".into()
             }),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer().without_time())
         .init();
 
     // Create database connection
     let db = Surreal::new::<RocksDb>(".jellyvr-db").await?;
     db.use_ns("jellyvr").use_db("jellyvr").await?;
 
-    // Sorry it's hardcoded for now
+    // Sorry it's mostly hardcoded for now
     let config = AppConfig {
-        jellyfin_base_url: "https://jellyfin.alyti.dev".to_string(),
-        cache_lifetime: Duration::from_secs(60 * 2),
+        jellyfin_base_url: std::env::var("JELLYFIN_HOST").wrap_err("JELLYFIN_HOST not set")?,
+        cache_lifetime: Duration::from_secs(60 * 5), // 5 minutes for now
         prefered_subtitles_language: Some("eng".to_string()),
-        watchtime_tracking: false,
+        watchtime_tracking: true, // Doesn't do anything rn anyway
     };
 
     let app_state = AppState {
@@ -80,11 +81,12 @@ async fn main() -> eyre::Result<()> {
 
     let app = Router::new()
         .route("/", get(root))
+        .route("/health", get(|| async { "OK" } ))
         .nest("/heresphere", heresphere_api)
         .nest_service("/assets", ServeEmbed::<Assets>::new())
         // .route("/heresphere/scan", post(heresphere_scan))
         .with_state(app_state.clone())
-        .layer(
+        .layer((
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
                     let matched_path = request
@@ -96,22 +98,10 @@ async fn main() -> eyre::Result<()> {
                         "http_request",
                         method = ?request.method(),
                         matched_path,
-                        some_other_field = tracing::field::Empty,
                     )
-                })
-                .on_request(|_request: &Request<_>, _span: &Span| {
-                    // You can use `_span.record("some_other_field", value)` in one of these
-                    // closures to attach a value to the initially empty field in the info_span
-                    // created above.
-                })
-                .on_response(|_response: &Response, _latency: Duration, _span: &Span| {})
-                .on_body_chunk(|_chunk: &Bytes, _latency: Duration, _span: &Span| {})
-                .on_eos(
-                    |_trailers: Option<&HeaderMap>, _stream_duration: Duration, _span: &Span| {},
-                )
-                .on_failure(
-                    |_error: ServerErrorsFailureClass, _latency: Duration, _span: &Span| {},
-                ),
+                }),
+                TimeoutLayer::new(Duration::from_secs(30)),
+            )
         )
         .fallback(handler_404);
 
@@ -140,8 +130,32 @@ async fn main() -> eyre::Result<()> {
 
     // run it
     tracing::debug!("listening on {}", listener.local_addr()?);
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app).with_graceful_shutdown(shutdown_signal()).await?;
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
 
 #[derive(RustEmbed, Clone)]

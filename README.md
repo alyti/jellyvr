@@ -12,11 +12,17 @@ Jellyfin proxy for VR Media Players
 - [x] JellyFin QuickConnect as auth
 - [x] JellyFin playback tracking
 - [ ] Configuration through
-  - [ ] Environment
+  - [x] Environment 
+    - `JELLYFIN_HOST` (Required) Jellyfin server host
+    - `RUST_LOG` Logging configuration, see [tracing_subscriber::filter::EnvFilter](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for details.
   - [ ] YAML
   - [x] ~~Code~~ (Sorry)
 
 ## Usage
+
+### Install & Config
+Find built container in [Packages](https://github.com/alyti/jellyvr/packages).
+Configure by setting `JELLYFIN_HOST` env and mounting `/data` to some persistent location.
 
 ### Login
 In HereSphere, navigate to root page (ex. `https://jellyvr.tld/`), you should see a code, on another device go to your jellyfin server and in QuickConnect page enter the code from jellyvr.

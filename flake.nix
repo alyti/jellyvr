@@ -10,6 +10,7 @@
   };
 
   outputs = {
+    self,
     nixpkgs,
     utils,
     fenix,
@@ -26,13 +27,30 @@
         rustPlatform = pkgs.makeRustPlatform {
           inherit (toolchain) cargo rustc;
         };
+        cargoToml = with builtins; let toml = readFile ./Cargo.toml; in fromTOML toml;
+
+        buildMetadata = with pkgs.lib.strings;
+          let
+            lastModifiedDate = self.lastModifiedDate or self.lastModified or "";
+            date = builtins.substring 0 8 lastModifiedDate;
+            shortRev = self.shortRev or "dirty";
+            hasDateRev = lastModifiedDate != "" && shortRev != "";
+            dot = optionalString hasDateRev ".";
+          in "${date}${dot}${shortRev}";
+
+        version =  with pkgs.lib.strings;
+          let
+            hasBuildMetadata = buildMetadata != "";
+            plus = optionalString hasBuildMetadata "+";
+          in "${cargoToml.package.version}${plus}${buildMetadata}";
       in rec
       {
         # Executed by `nix build`
-        packages.default =
-          rustPlatform.buildRustPackage {
+        packages = let 
+          bin = rustPlatform.buildRustPackage {
+            inherit version;
+
             pname = "jellyvr";
-            version = "0.1.0";
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
 
@@ -50,10 +68,28 @@
             ROCKSDB_INCLUDE_DIR = "${pkgs.rocksdb}/include";
             ROCKSDB_LIB_DIR = "${pkgs.rocksdb}/lib";
 
-
             # For other makeRustPlatform features see:
             # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#cargo-features-cargo-features
           };
+
+          dockerImage = pkgs.dockerTools.buildLayeredImage {
+            name = "jellyvr";
+            tag = "v${builtins.replaceStrings [ "+" ] [ "-" ] version}";
+            created = "now";
+            config = {
+              Entrypoint  = "${bin}/bin/jellyvr";
+              Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+              WorkingDir = "/data";
+              Volumes = {
+                "/data" = {};
+              };
+            };
+          };
+        in {
+          inherit bin dockerImage;
+          default = bin;
+        };
+          
 
         # Executed by `nix run`
         apps = {
@@ -94,6 +130,7 @@
             systemfd
             openssl # required by openssl-sys
             jq
+            dive
           ];
           NIXPKGS_ALLOW_UNFREE=1;
           # Specify the rust-src path (many editors rely on this)
