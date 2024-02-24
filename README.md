@@ -24,6 +24,8 @@ Jellyfin proxy for VR Media Players
 ### Install & Config
 Find built container in [Packages](https://github.com/alyti/jellyvr/packages).
 Configure by setting `JELLYFIN_HOST` env and mounting `/data` to some persistent location.
+Intended usage is through either k8s deployment or docker-compose.
+See [example helmrelease.yaml](./example.helmrelease.yaml) for k8s-flux based reference.
 
 ### Login
 In HereSphere, navigate to root page (ex. `https://jellyvr.tld/`), you should see a code, on another device go to your jellyfin server and in QuickConnect page enter the code from jellyvr.
