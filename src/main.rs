@@ -64,6 +64,8 @@ async fn main() -> eyre::Result<()> {
         watchtime_tracking: true, // Doesn't do anything rn anyway
     };
 
+    tracing::info!(config = ?config, "Loaded config");
+
     let app_state = AppState {
         jellyfin: JellyfinState {
             client: jellyfin::JellyfinClient::new(jellyfin::JellyfinConfig::new(
