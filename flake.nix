@@ -77,7 +77,7 @@
             tag = "v${builtins.replaceStrings [ "+" ] [ "-" ] version}";
             created = "now";
             config = {
-              Entrypoint  = "${bin}/bin/jellyvr";
+              Entrypoint  = [ "${bin}/bin/jellyvr" ];
               Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
               WorkingDir = "/data";
               Volumes = {
