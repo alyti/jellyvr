@@ -141,7 +141,7 @@ impl QuickConnectSession {
         self.client.client.post(&caps_url).json(&types::ClientCapabilitiesDto{
             // These don't actually seem to do anything at all...
             app_store_url: Some("https://github.com/alyti/jellyvr/".to_string()),
-            icon_url: Some("https://raw.githubusercontent.com/alyti/jellyvr/main/assets/images/jellyfin-jellyvr-logo.png".to_string()),
+            icon_url: Some("https://raw.githubusercontent.com/alyti/jellyvr/main/assets/images/jellyfin-jellyvr-logo.svg".to_string()),
             device_profile: None, //Some(DeviceProfile{}),
             message_callback_url: None,
             playable_media_types: vec!["Video".to_string()],
@@ -396,6 +396,24 @@ impl JellyfinUser {
             session_id: None,
             subtitle_stream_index: None,
             volume_level: None,
+        }).header("X-Emby-Authorization", emby_authorization(Some(&self.token))).send().await?.error_for_status()?;
+        Ok(())
+    }
+
+    pub async fn playback_stopped(&self, vid: &str, play_session_id: &str, position: i64) -> Result<(), reqwest::Error> {
+        let url = format!("{}/Sessions/Playing/Stopped", self.client.config.base_url);
+        self.client.client.post(&url).json(&types::PlaybackStopInfo{
+            failed: Some(false),
+            item_id: Some(Uuid::parse_str(vid).expect("Invalid UUID")),
+            play_session_id: Some(play_session_id.to_string()),
+            position_ticks: Some(position),
+            media_source_id: Some(vid.to_string()),
+            next_media_type: None,
+            item: None,
+            live_stream_id: None,
+            now_playing_queue: None,
+            playlist_item_id: None,
+            session_id: None,
         }).header("X-Emby-Authorization", emby_authorization(Some(&self.token))).send().await?.error_for_status()?;
         Ok(())
     }

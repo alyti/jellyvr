@@ -547,13 +547,14 @@ async fn heresphere_video(
                 }
             )
         };
-        if let Some(old_pid) = user.last_known_playback {
-            if old_pid.play_session_id != play_session {
+        if let Some(old_playback) = user.last_known_playback {
+            if old_playback.play_session_id != play_session {
                 tracing::debug!(
-                    "Updating play session ID from {} to {} (TODO: send jellyfin stopped)",
-                    old_pid.play_session_id,
+                    "Updating play session ID from {} to {}",
+                    &old_playback.play_session_id,
                     play_session
                 );
+                jellyfin_user.playback_stopped(&old_playback.video_id, &old_playback.play_session_id, old_playback.duration).await?;
             }
         }
         video.data.event_server = Some(format!(
@@ -642,12 +643,16 @@ async fn heresphere_event(
                                 speed: event.speed,
                                 position_estimate: (event.time * 10000.0) as i64,
                                 last_update: chrono::Utc::now(),
-                                ..user.last_known_playback.unwrap()
+                                ..user.last_known_playback.clone().unwrap()
                             }),
-                            ..user
+                            ..user.clone()
                         }),
                     };
                     app.update_session(new_session_state).await?;
+                    let jellyfin_user = app.jellyfin.client.resume_user(&user.user_id, &user.token);
+                    let playback = user.last_known_playback.as_ref().unwrap();
+                    jellyfin_user.playback_progress(&playback.video_id, &playback.play_session_id, (event.time * 10000.0) as i64, true, playback.started_at).await?;
+                    
                 },
                 heresphere::EventType::Close => {
                     // Doesn't get called often enough to be useful currently
