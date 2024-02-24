@@ -38,7 +38,7 @@ jobs:
           docker load --input ./result
           export DOCKER_ID=$(docker images jellyvr --format {{.ID}})
           export DOCKER_TAG=$(docker images jellyvr --format {{.Tag}})
-          docker tag $DOCKER_ID ghcr.io/alyti/jellyvr:release
           docker tag $DOCKER_ID ghcr.io/alyti/jellyvr:$DOCKER_TAG
+          docker tag $DOCKER_ID ghcr.io/alyti/jellyvr:latest
       - name: "Push Docker image to GitHub Container Registry"
         run: docker push --all-tags ghcr.io/alyti/jellyvr
