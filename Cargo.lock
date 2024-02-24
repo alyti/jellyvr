@@ -1755,7 +1755,7 @@ dependencies = [
  "listenfd",
  "progenitor",
  "rand",
- "regress 0.4.1",
+ "regress",
  "reqwest",
  "rust-embed",
  "serde",
@@ -2821,15 +2821,6 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
-
-[[package]]
-name = "regress"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a92ff21fe8026ce3f2627faaf43606f0b67b014dbc9ccf027181a804f75d92e"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "regress"
@@ -4271,7 +4262,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote",
- "regress 0.7.1",
+ "regress",
  "schemars",
  "serde_json",
  "syn 2.0.49",
