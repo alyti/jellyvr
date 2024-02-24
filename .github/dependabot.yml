@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "cargo"
+      - "dependencies"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "github-actions"
+      - "dependencies"
