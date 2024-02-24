@@ -57,7 +57,8 @@ async fn main() -> eyre::Result<()> {
 
     // Sorry it's mostly hardcoded for now
     let config = AppConfig {
-        jellyfin_base_url: std::env::var("JELLYFIN_HOST").wrap_err("JELLYFIN_HOST not set")?,
+        jellyfin_api_host: std::env::var("JELLYFIN_HOST").wrap_err("JELLYFIN_HOST not set")?,
+        jellyfin_remote_host: std::env::var("JELLYFIN_REMOTE_HOST").or(std::env::var("JELLYFIN_HOST")).wrap_err("JELLYFIN_HOST not set")?,
         cache_lifetime: Duration::from_secs(60 * 5), // 5 minutes for now
         prefered_subtitles_language: Some("eng".to_string()),
         watchtime_tracking: true, // Doesn't do anything rn anyway
@@ -66,7 +67,7 @@ async fn main() -> eyre::Result<()> {
     let app_state = AppState {
         jellyfin: JellyfinState {
             client: jellyfin::JellyfinClient::new(jellyfin::JellyfinConfig::new(
-                config.jellyfin_base_url.clone(),
+                config.jellyfin_api_host.clone(),
             )),
         },
         db: db.clone(),
@@ -164,7 +165,8 @@ struct Assets;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AppConfig {
-    jellyfin_base_url: String,
+    jellyfin_api_host: String,
+    jellyfin_remote_host: String,
     cache_lifetime: Duration,
     prefered_subtitles_language: Option<String>,
     watchtime_tracking: bool,
@@ -582,7 +584,7 @@ async fn heresphere_video(
             vid
         ));
         video.data.media[0].sources[0].url =
-            format!("{}{}", app.config.jellyfin_base_url, new_media_source);
+            format!("{}{}", app.config.jellyfin_remote_host, new_media_source);
         let new_session_state = SessionState {
             id: session_state.id,
             session: Session::User(User {

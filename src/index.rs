@@ -44,7 +44,7 @@ impl HeresphereIndex {
             .ok_or(AppError(eyre::eyre!("No items in BaseItemDtoQueryResult")))?;
         let videos = baseitems_to_video_cache(
             &user_id,
-            &app.config.jellyfin_base_url,
+            &app.config.jellyfin_remote_host,
             &token,
             &app.config,
             &items,

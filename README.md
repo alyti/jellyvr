@@ -14,6 +14,7 @@ Jellyfin proxy for VR Media Players
 - [ ] Configuration through
   - [x] Environment 
     - `JELLYFIN_HOST` (Required) Jellyfin server host
+    - `JELLYFIN_REMOTE_HOST` Override urls pointing to Jellyfin instance (media & images), defaults to `JELLYFIN_HOST`.
     - `RUST_LOG` Logging configuration, see [tracing_subscriber::filter::EnvFilter](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for details.
   - [ ] YAML
   - [x] ~~Code~~ (Sorry)
