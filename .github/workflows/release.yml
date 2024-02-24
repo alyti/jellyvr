@@ -33,6 +33,12 @@ jobs:
           extraPullNames: nix-community
       - name: "Build Docker image"
         run: nix build .#dockerImage
-      - run: docker load --input ./result
+      - name: "Load and tag image"
+        run: |
+          docker load --input ./result
+          export DOCKER_ID=$(docker images jellyvr --format {{.ID}})
+          export DOCKER_TAG=$(docker images jellyvr --format {{.Tag}})
+          docker tag $DOCKER_ID ghcr.io/alyti/jellyvr:release
+          docker tag $DOCKER_ID ghcr.io/alyti/jellyvr:$DOCKER_TAG
       - name: "Push Docker image to GitHub Container Registry"
-        run: docker push ghcr.io/alyti/jellyvr:$(docker images jellyvr --format {{.Tag}})
+        run: docker push --all-tags ghcr.io/alyti/jellyvr
