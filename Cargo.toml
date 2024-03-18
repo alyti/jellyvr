@@ -21,10 +21,10 @@ anyhow = "1"
 tower-http = { version = "0.5", features = ["trace", "timeout"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-http-body-util = "0.1.0"
+http-body-util = "0.1.1"
 axum-extra = { version = "0.9", features = ["cookie", "cookie-private"] }
 serde_repr = "0.1.18"
-surrealdb = { version = "1.2", features = ["kv-rocksdb"] }
+surrealdb = { version = "1.3", features = ["kv-rocksdb"] }
 eyre = "0.6"
 color-eyre = "0.6"
 axum-embed = "0.1"
