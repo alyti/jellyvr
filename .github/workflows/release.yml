@@ -25,7 +25,7 @@ jobs:
           registry: ghcr.io
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
-      - uses: cachix/install-nix-action@v25
+      - uses: cachix/install-nix-action@V27
       - uses: cachix/cachix-action@v14
         with:
           name: jellyvr
